@@ -16,6 +16,7 @@
 // 日志记录占位符
 #define APP_LOG_MAIN_INFO(format, ...) printf("[MAIN] " format "\n", ##__VA_ARGS__)
 #define APP_LOG_MAIN_ERROR(format, ...) printf("[MAIN ERROR] " format "\n", ##__VA_ARGS__)
+#define APP_LOG_MAIN_WARN(format, ...) printf("[MAIN WARN] " format "\n", ##__VA_ARGS__)
 
 // 空闲任务的堆栈，如果需要明确提供或增加
 // configMINIMAL_STACK_SIZE 通常在 FreeRTOSConfig.h 中定义
@@ -27,8 +28,10 @@ static void system_init(void) {
     // 初始化设备和板级外设
     result = cybsp_init();
     if (result != CY_RSLT_SUCCESS) {
-        APP_LOG_MAIN_ERROR("BSP initialization failed: 0x%08X", (unsigned int)result);
+        // APP_LOG_MAIN_ERROR("BSP initialization failed: 0x%08X", (unsigned int)result);
         CY_ASSERT(0); // 失败时暂停
+    } else {
+        // APP_LOG_MAIN_INFO("BSP initialized successfully.");
     }
 
     // 初始化 Retarget IO 以支持 printf 功能
@@ -38,6 +41,14 @@ static void system_init(void) {
         // 对于调试来说，这很关键。考虑如何在生产环境中处理此问题。
         // CY_ASSERT(0); 
         // 如果 retarget_io 失败，在此处打印错误将不起作用。
+    }
+
+    // 初始化用户LED
+    result = cyhal_gpio_init(CYBSP_USER_LED, CYHAL_GPIO_DIR_OUTPUT, CYHAL_GPIO_DRIVE_STRONG, CYBSP_LED_STATE_OFF);
+    if (result != CY_RSLT_SUCCESS) {
+        APP_LOG_MAIN_ERROR("USER LED GPIO initialization failed: 0x%08X", (unsigned int)result);
+    } else {
+        APP_LOG_MAIN_INFO("USER LED GPIO initialized (Pin defined by CYBSP_USER_LED, Initial State: OFF).");
     }
     
     // 使能全局中断。应在所有关键初始化之后进行。

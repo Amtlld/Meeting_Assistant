@@ -26,4 +26,8 @@ void audio_pause_recording(void); // 目前与停止类似，将来可能有区�
 // 可能用于通过滑块控制音量
 void audio_set_mic_volume(uint8_t percentage); // 0-100
 
+// 控制静音帧发送的函数
+void audio_start_sending_silent_frames(void);
+void audio_stop_sending_silent_frames(void);
+
 #endif /* AUDIO_TASK_H_ */ 

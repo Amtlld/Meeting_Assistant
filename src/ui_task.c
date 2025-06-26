@@ -74,19 +74,51 @@ void ui_task(void *pvParameters) {
     }
 
     // Create a timer for LED blinking patterns
-    // Initially stopped, period will be set when blinking starts // 初始停止，周期将在闪烁开始时设置
+    // 初始停止，周期将在闪烁开始时设置
     led_blink_timer_handle = xTimerCreate("LedBlinkTmr", pdMS_TO_TICKS(1000), 
                                            pdTRUE, (void *)0, led_timer_callback);
     if (led_blink_timer_handle == NULL) {
         APP_LOG_UI_ERROR("Failed to create LED blink timer.");
+    } else {
+        APP_LOG_UI_INFO("LED blink timer created successfully.");
     }
 
-    // Initialize LED to current_led_state (which is initially OFF after state machine calls ui_set_led_state)
-    // The state machine calls ui_set_led_state(LED_STATE_FAST_BLINK) on init. // 状态机在初始化时调用 ui_set_led_state(LED_STATE_FAST_BLINK)。
-    // So no need to call it explicitly here if state machine init runs first. // 因此，如果状态机初始化首先运行，则无需在此处显式调用它。
+    // UI任务核心组件初始化完成
+    APP_LOG_UI_INFO("UI Task core components initialized. Refreshing LED state based on current FSM state.");
+
+    // 根据当前状态机的状态，设置初始的LED状态
+    // 这一步确保了即使 main 中的 state_machine_init 更早地设置了 current_led_state
+    // (那时 led_blink_timer_handle 可能为NULL，导致闪烁未启动),
+    // LED也能在UI任务的定时器准备好后正确反映出来。
+    app_state_t current_fsm_state = state_machine_get_current_state(); // 获取状态机当前状态
+    led_indicator_state_t initial_led_indicator;
+
+    switch (current_fsm_state) {
+        case APP_STATE_WIFI_DISCONNECTED:
+        case APP_STATE_SERVER_DISCONNECTED:
+            initial_led_indicator = LED_STATE_FAST_BLINK;
+            break;
+        case APP_STATE_IDLE:
+            initial_led_indicator = LED_STATE_OFF;
+            break;
+        case APP_STATE_MEETING_IN_PROGRESS:
+            initial_led_indicator = LED_STATE_SLOW_BLINK;
+            break;
+        case APP_STATE_MEETING_PAUSED:
+            initial_led_indicator = LED_STATE_SOLID_ON;
+            break;
+        default:
+            // 如果状态未知，默认为OFF，并打印一条错误日志
+            APP_LOG_UI_ERROR("Unknown FSM state (%d) during UI init, defaulting LED to OFF.", current_fsm_state);
+            initial_led_indicator = LED_STATE_OFF; 
+            break;
+    }
+    APP_LOG_UI_INFO("Initial FSM state is %d, setting LED indicator to %d", current_fsm_state, initial_led_indicator);
+    ui_set_led_state(initial_led_indicator); // 应用计算出的初始LED状态
 
     capsense_internal_cmd_t cmd;
     while (1) {
+
         // Wait for a command to scan or process CapSense data // 等待命令以扫描或处理 CapSense 数据
         // APP_LOG_UI_INFO("UI_TASK: Waiting for CapSense command...");
         if (xQueueReceive(capsense_internal_cmd_queue, &cmd, portMAX_DELAY) == pdPASS) {
@@ -304,6 +336,7 @@ void ui_set_led_state(led_indicator_state_t new_led_state) {
 
 static void led_timer_callback(TimerHandle_t xTimer) {
     (void)xTimer;
+    // APP_LOG_UI_INFO("LED timer callback fired."); // 调试日志
     if (current_led_state == LED_STATE_SLOW_BLINK || current_led_state == LED_STATE_FAST_BLINK) {
         led_state = !led_state;
         update_led_physical_state();
@@ -312,10 +345,11 @@ static void led_timer_callback(TimerHandle_t xTimer) {
 
 static void update_led_physical_state(void) {
     // CYBSP_USER_LED is P13.7, low active // CYBSP_USER_LED 为 P13.7，低电平有效
+    // APP_LOG_UI_INFO("Updating LED physical state. Current 'led_state' flag: %s", led_state ? "ON" : "OFF");
     if (led_state) {
-        cyhal_gpio_write(CYBSP_USER_LED, CYBSP_LED_STATE_ON); // BSP typically defines ON as logic level for on // BSP 通常将 ON 定义为开启的逻辑电平
+        cyhal_gpio_write(CYBSP_USER_LED, CYBSP_LED_STATE_ON); // BSP 通常将 ON 定义为开启的逻辑电平
     } else {
-        cyhal_gpio_write(CYBSP_USER_LED, CYBSP_LED_STATE_OFF); // BSP typically defines OFF as logic level for off // BSP 通常将 OFF 定义为关闭的逻辑电平
+        cyhal_gpio_write(CYBSP_USER_LED, CYBSP_LED_STATE_OFF); // BSP 通常将 OFF 定义为关闭的逻辑电平
     }
 }
 

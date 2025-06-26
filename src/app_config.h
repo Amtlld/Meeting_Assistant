@@ -22,21 +22,24 @@
 #define AUDIO_BUFFER_SIZE_BYTES   (AUDIO_SAMPLES_PER_FRAME * AUDIO_CHANNELS * (AUDIO_BIT_RESOLUTION / 8))
 
 // MQTT 配置 (占位符，后续需要用户配置)
-//#define MQTT_BROKER_ADDRESS       "192.168.5.246"
+// #define MQTT_BROKER_ADDRESS       "192.168.5.246"
 #define MQTT_BROKER_ADDRESS       "111.229.213.23"
+
 #define MQTT_PORT                 (1883)
 #define MQTT_CLIENT_ID_PREFIX     "meeting_assistant"
+
 //#define MQTT_TOPIC_AUDIO_STREAM   "meeting_audio/stream"
 #define MQTT_TOPIC_AUDIO_STREAM   "audio/stream"
+
 #define MQTT_USERNAME             "" // 可选
 #define MQTT_PASSWORD             "" // 可选
 #define MQTT_SECURE_CONNECTION    (0) // 0 表示非安全连接，1 表示安全连接 (TLS)
 
 // Wi-Fi 配置 (占位符，后续需要用户配置)
-#define WIFI_SSID                 "603"
-#define WIFI_PASSWORD             "USST_3.1.603"
+#define WIFI_SSID                 "Meeting_Assistant"
+#define WIFI_PASSWORD             "12345678"
 #define WIFI_SECURITY             CY_WCM_SECURITY_WPA2_AES_PSK // 根据实际情况修改
-
+ 
 // 用户界面
 // LED4 (CY8CPROTO-062-4343W 上的用户 LED 是 P13.7，低电平有效)
 // #define USER_LED_PIN            (P13_7) // 通常由 BSP 定义为 CYBSP_USER_LED
@@ -58,7 +61,7 @@
 // 任务优先级
 #define MAIN_TASK_PRIORITY        (tskIDLE_PRIORITY + 1)
 #define AUDIO_TASK_PRIORITY       (tskIDLE_PRIORITY + 3)
-#define UI_TASK_PRIORITY          (tskIDLE_PRIORITY + 2) // UI 任务具有较高优先级以确保响应性
+#define UI_TASK_PRIORITY          (tskIDLE_PRIORITY + 3) // UI 任务具有较高优先级以确保响应性
 #define NETWORK_TASK_PRIORITY     (tskIDLE_PRIORITY + 1) // 网络任务优先级较低
 
 // 任务堆栈大小
